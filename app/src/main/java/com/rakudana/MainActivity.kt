@@ -2,6 +2,7 @@ package com.rakudana
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -9,52 +10,27 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.work.*
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import java.util.prefs.Preferences
 
 class MainActivity : AppCompatActivity() {
 
-    /*
-    suspend fun sendData() {
-        val url = "ws://192.168.0.19:${this.port}/ws/a"
-        Log.d("MainActivity", "connect to url: $url")
-        val wsClient = WebSocketClient(this ,  URI(url) )
-        wsClient.connect()
-        while (true) {
-            if (wsClient.isOpen) {
-                delay(100L)
-                wsClient.send("hello")
-                Log.d("ClientActions", "sent")
-                break
-            }
-        }
-        Log.d("MainActivity", "ws closing")
-        wsClient.close()
-    }
-
-    fun main() = runBlocking {
-        launch {
-            delay(5000L)
-            sendData()
-        }
-        invoke_browser()
-    }
-    */
-
-    fun main() {
-
-        val port: Int = (49152..65535).random()
+    private fun main() {
+        // kick a background thread UploadWorker with web socket port number
+        var port = (49152..65535).random()
         Log.d("MainActivity", "port: $port")
-
-        val myData: Data = workDataOf("PORT_NUMBER" to port.toString())
         val uploadWorkRequest: WorkRequest =
                 OneTimeWorkRequestBuilder<UploadWorker>()
-                        .setInputData(myData)
-                        .setInitialDelay(3, TimeUnit.SECONDS)
+                        .setInputData(workDataOf("PORT" to port))
+                        .setInitialDelay(5000, TimeUnit.MILLISECONDS)
+                        .setBackoffCriteria( BackoffPolicy.LINEAR, 3000, TimeUnit.MILLISECONDS)
+                        .addTag("upload")
                         .build()
-        WorkManager
-                .getInstance(this.getApplicationContext())
-                .enqueue(uploadWorkRequest)
-
-        val url = "http://192.168.0.19:8080/www/index.html?invoker=rakudana_app&port=$port"
+        val workManager = WorkManager.getInstance(this)
+        workManager.cancelAllWorkByTag("upload")
+        workManager.enqueue(uploadWorkRequest)
+        // invoke browser
+        //val url = "http://192.168.0.19:8080/www/index.html?invoker=rakudana_app&port=" + port.toString()
+        val url = "https://rakudana.com:8080/www/index.html?invoker=rakudana_app&port=" + port.toString()
         val uri = Uri.parse(url)
         Log.d("MainActivity", "invoke url: $url")
         startActivity(Intent(Intent.ACTION_VIEW, uri))
@@ -62,9 +38,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("MainActivity", "onCreate")
+        Log.d("MainActivity", "savedInstanceState: $savedInstanceState")
         super.onCreate(savedInstanceState)
-        //setContentView(R.layout.activity_main)
-        //val appLinkIntent = intent
+        if (savedInstanceState==null) main()
     }
 
     override fun onPause() {
@@ -80,7 +56,6 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         Log.d("MainActivity", "OnResume")
         super.onResume()
-        main()
     }
 
     override fun onStop() {
@@ -98,24 +73,38 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
         Worker(appContext, workerParams) {
 
     override fun doWork(): Result {
-        val port = inputData.getString("PORT_NUMBER") ?: return Result.failure()
-        Log.d("UploadWorker", "port: $port")
-        val url = "ws://192.168.0.19:$port/ws/a"
-        val wsClient = WebSocketClient(this, URI(url))
-        Log.d("UploadWorker", "connect to url: $url")
-        wsClient.connect()
-        while (true) {
-            if (wsClient.isOpen) {
-                wsClient.send("hello")
-                Log.d("UploadWorker", "sent")
-                break
-            }
-        }
-        Log.d("UploadWorker", "ws closing")
-        wsClient.close()
-        // Indicate whether the work finished successfully with the Result
-        return Result.success()
-    }
 
+        val port = inputData.getInt("PORT", 0 ) ?: return Result.failure()
+        val portString = port.toString()
+        Log.d("UploadWorker", "port: $inputData")
+        //val url = "ws://192.168.0.19:$portString/ws/a"
+        val url = "wss://rakudana.com:$portString/ws/a"
+        try {
+            val wsClient = WebSocketClient(this, URI(url))
+            Log.d("UploadWorker", "connecting to url: $url")
+            wsClient.connect()
+            while (true) {
+                Thread.sleep(1000)
+                if (wsClient.isOpen) {
+                    Log.d("UploadWorker", "web socket open")
+                    wsClient.send("hello")
+                    Log.d("UploadWorker", "sent to $portString")
+                    break
+                } else {
+                    Log.d("UploadWorker", "web socket $portString is not open")
+                }
+            }
+            // todo: keep open web socket to receive data
+            Log.d("UploadWorker", "ws closing")
+            wsClient.close()
+            // Indicate whether the work finished successfully with the Result
+            return Result.success()
+        } catch (throwable: Throwable) {
+            Log.d("UploadWorker", "exception")
+            return Result.failure()
+        }
+    }
 }
+
+
 

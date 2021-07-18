@@ -10,6 +10,14 @@
         android:roundIcon="@mipmap/rakudana_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Rakudana">
+        <activity android:name=".MainActivity"
+            android:launchMode="singleTask">
+            <!-- android:clearTaskOnLaunch="true" -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity android:name=".ClientActions">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -30,12 +38,6 @@
                     android:scheme="https"
                     android:host="rakudana.com:8080"
                     android:pathPattern="/apps" />
-            </intent-filter>
-        </activity>
-        <activity android:name=".MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
