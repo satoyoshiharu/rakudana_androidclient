@@ -1,5 +1,6 @@
 package com.rakudana
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import org.java_websocket.client.WebSocketClient
@@ -29,6 +30,12 @@ class WebSocketClient(val activity: UploadWorker, uri: URI) : WebSocketClient(ur
             Log.i(javaClass.simpleName, "メッセージをTextViewに追記しました。")
             Log.i(javaClass.simpleName, "スレッド：「${Thread.currentThread().name}」で実行中")
         }*/
+
+        Log.d("UploadWorker", "受信: $message")
+        val preferences = activity.applicationContext.getSharedPreferences("rakudana", Context.MODE_PRIVATE)
+        val editor = preferences.edit()
+        editor.putString("contacts", message)
+        editor.apply()
     }
 
     override fun send(text: String?) {

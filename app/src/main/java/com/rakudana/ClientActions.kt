@@ -1,6 +1,7 @@
 package com.rakudana
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -20,10 +21,22 @@ class ClientActions : AppCompatActivity() {
             val intentID = appLinkData.lastPathSegment
             Log.d("ClientActions", "intentID: $intentID")
             when (intentID) {
+                "dial" -> {
+                    val intent = Intent(Intent.ACTION_PICK).apply {
+                        type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
+                    }
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                    }
+                }
                 "make_call" -> {
                     val intent = Intent(Intent.ACTION_PICK).apply {
                         type = ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE
                     }
+
+                    val contactName = appLinkData.getQueryParameter("contact")
+                    Log.d("ClientActions", "contact name: $contactName")
+
                     val resultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                         if (result.resultCode == Activity.RESULT_OK) {
                             val data: Intent = result.data!!
@@ -34,8 +47,25 @@ class ClientActions : AppCompatActivity() {
                                 // If the cursor returned is valid, get the phone number
                                 if (cursor!!.moveToFirst()) {
                                     val numberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
-                                    val number = cursor.getString(numberIndex)
+                                    var number = cursor.getString(numberIndex)
+                                    number  = number.replace("-","")
                                     Log.d("ClientActions", "number: $number")
+
+                                    if (contactName !== null) {
+                                        val preferences = applicationContext.getSharedPreferences("rakudana", Context.MODE_PRIVATE)
+                                        var callrecords: String? = preferences.getString("callrec","")
+                                        if (callrecords?.indexOf("$contactName:$number") == -1) {
+                                            Log.d("ClientActions", "new record: $contactName:$number")
+                                            val editor = preferences.edit()
+                                            callrecords += "," + contactName + ':' + number
+                                            editor.putString("callrec", callrecords)
+                                            editor.apply()
+                                        } else {
+                                            Log.d("ClientActions", "$contactName:$number is found in $callrecords")
+                                        }
+                                        Log.d("ClientActions", "callrec->"+callrecords)
+                                    }
+
                                     val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
                                     intent.data = Uri.parse("tel:$number")
                                     if (intent.resolveActivity(packageManager) != null) {

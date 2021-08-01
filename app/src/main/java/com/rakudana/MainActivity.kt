@@ -21,8 +21,8 @@ class MainActivity : AppCompatActivity() {
         val uploadWorkRequest: WorkRequest =
                 OneTimeWorkRequestBuilder<UploadWorker>()
                         .setInputData(workDataOf("PORT" to port))
-                        .setInitialDelay(5000, TimeUnit.MILLISECONDS)
-                        .setBackoffCriteria( BackoffPolicy.LINEAR, 3000, TimeUnit.MILLISECONDS)
+                        .setInitialDelay(3000, TimeUnit.MILLISECONDS)
+                        .setBackoffCriteria( BackoffPolicy.LINEAR, 1000, TimeUnit.MILLISECONDS)
                         .addTag("upload")
                         .build()
         val workManager = WorkManager.getInstance(this)
@@ -82,12 +82,19 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
         try {
             val wsClient = WebSocketClient(this, URI(url))
             Log.d("UploadWorker", "connecting to url: $url")
-            wsClient.connect()
+            wsClient.connectBlocking()
             while (true) {
                 Thread.sleep(1000)
                 if (wsClient.isOpen) {
                     Log.d("UploadWorker", "web socket open")
-                    wsClient.send("hello")
+
+                    val preferences =  applicationContext.getSharedPreferences("rakudana", Context.MODE_PRIVATE)
+                    val contacts: String? = preferences.getString("contacts","")
+                    Log.d("ClientActions", "contacts: $contacts")
+                    val callrecords: String? = preferences.getString("callrecs","")
+                    Log.d("ClientActions", "call records: $callrecords")
+
+                    wsClient.send(contacts + "\n" + callrecords)
                     Log.d("UploadWorker", "sent to $portString")
                     break
                 } else {
@@ -95,8 +102,8 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
                 }
             }
             // todo: keep open web socket to receive data
-            Log.d("UploadWorker", "ws closing")
-            wsClient.close()
+            //Log.d("UploadWorker", "ws closing")
+            //wsClient.close()
             // Indicate whether the work finished successfully with the Result
             return Result.success()
         } catch (throwable: Throwable) {

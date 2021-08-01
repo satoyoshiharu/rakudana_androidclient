@@ -29,7 +29,7 @@
                     android:host="rakudana.com"
                     android:pathPrefix="/client_app"/>
             </intent-filter>
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE"/>
@@ -37,7 +37,7 @@
                 <data
                     android:scheme="https"
                     android:host="rakudana.com:8080"
-                    android:pathPattern="/apps" />
+                    android:pathPattern="/app" />
             </intent-filter>
         </activity>
     </application>
