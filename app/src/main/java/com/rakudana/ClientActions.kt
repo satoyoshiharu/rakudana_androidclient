@@ -52,18 +52,27 @@ class ClientActions : AppCompatActivity() {
                                     Log.d("ClientActions", "number: $number")
 
                                     if (contactName !== null) {
+                                        // update call records
                                         val preferences = applicationContext.getSharedPreferences("rakudana", Context.MODE_PRIVATE)
-                                        var callrecords: String? = preferences.getString("callrec","")
+                                        var callrecords: String? = preferences.getString("callrecs", "")
                                         if (callrecords?.indexOf("$contactName:$number") == -1) {
                                             Log.d("ClientActions", "new record: $contactName:$number")
+                                            val crCount = callrecords.split(",")
+                                            if (crCount.size > 10) {// drop 1st record
+                                                val firstrecEnd = callrecords.indexOf(',', 1)
+                                                callrecords = callrecords.substring(firstrecEnd)
+                                            }
                                             val editor = preferences.edit()
-                                            callrecords += "," + contactName + ':' + number
-                                            editor.putString("callrec", callrecords)
+                                            if (callrecords.length == 0)
+                                                callrecords = contactName + ':' + number
+                                            else
+                                                callrecords = callrecords + "," + contactName + ':' + number
+                                            editor.putString("callrecs", callrecords)
+                                            Log.d("ClientActions", "callrecords updated: $callrecords")
                                             editor.apply()
                                         } else {
                                             Log.d("ClientActions", "$contactName:$number is found in $callrecords")
                                         }
-                                        Log.d("ClientActions", "callrec->"+callrecords)
                                     }
 
                                     val intent = android.content.Intent(android.content.Intent.ACTION_DIAL)
