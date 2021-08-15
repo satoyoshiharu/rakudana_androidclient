@@ -1,0 +1,9 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.rakudana",
+    "sha256_cert_fingerprints":
+    ["B1:81:07:6C:E0:5D:03:EC:E5:A8:0D:32:EC:65:29:30:CD:96:89:9C:FE:C1:CD:9A:4E:16:FE:44:E2:5F:33:1A"]
+  }
+}]

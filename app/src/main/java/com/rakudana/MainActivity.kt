@@ -21,12 +21,12 @@ class MainActivity : AppCompatActivity() {
         val uploadWorkRequest: WorkRequest =
                 OneTimeWorkRequestBuilder<UploadWorker>()
                         .setInputData(workDataOf("PORT" to port))
-                        .setInitialDelay(3000, TimeUnit.MILLISECONDS)
+                        .setInitialDelay(1000, TimeUnit.MILLISECONDS)
                         .setBackoffCriteria( BackoffPolicy.LINEAR, 1000, TimeUnit.MILLISECONDS)
                         .addTag("upload")
                         .build()
         val workManager = WorkManager.getInstance(this)
-        workManager.cancelAllWorkByTag("upload")
+        workManager.cancelAllWork()//cancelAllWorksByTag("upload")
         workManager.enqueue(uploadWorkRequest)
         // invoke browser
         //val url = "http://192.168.0.19:8080/www/index.html?invoker=rakudana_app&port=" + port.toString()
@@ -79,13 +79,21 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
         Log.d("UploadWorker", "port: $inputData")
         //val url = "ws://192.168.0.19:$portString/ws/a"
         val url = "wss://rakudana.com:$portString/ws/a"
+
+        // Reference: https://www.javadoc.io/doc/org.java-websocket/Java-WebSocket/1.3.4/org/java_websocket/client/WebSocketClient.html
+        // Bug information: https://github.com/alexandrainst/processing_websockets/issues/6
+        // If server is not ready yet, connection is refused.
+        // Then the .connect function handles exception in itself, and can't catch it outside.
+
         try {
-            val wsClient = WebSocketClient(this, URI(url))
-            Log.d("UploadWorker", "connecting to url: $url")
-            wsClient.connectBlocking()
             while (true) {
-                Thread.sleep(1000)
-                if (wsClient.isOpen) {
+                val wsClient = WebSocketClient(this, URI(url))
+                Log.d("UploadWorker", "connecting to url: $url")
+                if (wsClient.connectBlocking()) {
+                    while (!(wsClient.isOpen())) {
+                        Log.d("UploadWorker", "web socket $portString is not open")
+                        Thread.sleep(100)
+                    }
                     Log.d("UploadWorker", "web socket open")
 
                     val preferences =  applicationContext.getSharedPreferences("rakudana", Context.MODE_PRIVATE)
@@ -98,7 +106,9 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
                     Log.d("UploadWorker", "sent to $portString")
                     break
                 } else {
-                    Log.d("UploadWorker", "web socket $portString is not open")
+                    Log.d("UploadWorker", "web socket $portString connection failed")
+                    wsClient.close()
+                    Thread.sleep(1000)
                 }
             }
             // todo: keep open web socket to receive data
