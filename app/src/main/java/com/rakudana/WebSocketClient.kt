@@ -13,25 +13,27 @@ import java.net.URI
 
 class WebSocketClient(val activity: UploadWorker, uri: URI) : WebSocketClient(uri) {
 
+    val DEBUG = false
+
     override fun onOpen(handshakedata: ServerHandshake?) {
-        Log.d("UploadWorker", "WSサーバに接続しました。")
-        Log.d("UploadWorker", "スレッド：「${Thread.currentThread().name}」で実行中")
+        if (DEBUG) Log.d("UploadWorker", "WSサーバに接続しました。")
+        if (DEBUG) Log.d("UploadWorker", "スレッド：「${Thread.currentThread().name}」で実行中")
     }
 
     override fun onClose(code: Int, reason: String?, remote: Boolean) {
-        Log.d("UploadWorker", "WSサーバから切断しました。reason:${reason}")
-        Log.d("UploadWorker", "スレッド：「${Thread.currentThread().name}」で実行中")
+        if (DEBUG) Log.d("UploadWorker", "WSサーバから切断しました。reason:${reason}")
+        if (DEBUG) Log.d("UploadWorker", "スレッド：「${Thread.currentThread().name}」で実行中")
     }
 
     override fun onMessage(message: String?) {
-        Log.d("UploadWorker", "メッセージを受け取りました。")
-        Log.d("UploadWorker", "スレッド：「${Thread.currentThread().name}」で実行中")
+        if (DEBUG) Log.d("UploadWorker", "メッセージを受け取りました。")
+        if (DEBUG) Log.d("UploadWorker", "スレッド：「${Thread.currentThread().name}」で実行中")
         /*activity.runOnUiThread {
             Log.i(javaClass.simpleName, "メッセージをTextViewに追記しました。")
             Log.i(javaClass.simpleName, "スレッド：「${Thread.currentThread().name}」で実行中")
         }*/
 
-        Log.d("UploadWorker", "受信: $message")
+        if (DEBUG) Log.d("UploadWorker", "受信: $message")
         val preferences = activity.applicationContext.getSharedPreferences("rakudana", Context.MODE_PRIVATE)
         val editor = preferences.edit()
         editor.putString("contacts", message)
@@ -39,12 +41,12 @@ class WebSocketClient(val activity: UploadWorker, uri: URI) : WebSocketClient(ur
     }
 
     override fun send(text: String?) {
-        Log.d("UploadWorker", "送信: $text")
+        if (DEBUG) Log.d("UploadWorker", "送信: $text")
         super.send(text)
     }
 
     override fun onError(ex: Exception?) {
-        Log.d("UploadWorker", "エラーが発生しました。", ex)
-        Log.d("UploadWorker", "スレッド：「${Thread.currentThread().name}」で実行中")
+        if (DEBUG) Log.d("UploadWorker", "エラーが発生しました。", ex)
+        if (DEBUG) Log.d("UploadWorker", "スレッド：「${Thread.currentThread().name}」で実行中")
     }
 }

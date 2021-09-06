@@ -14,10 +14,12 @@ import java.util.prefs.Preferences
 
 class MainActivity : AppCompatActivity() {
 
+    val DEBUG = false
+
     private fun main() {
         // kick a background thread UploadWorker with web socket port number
         var port = (49152..65535).random()
-        Log.d("MainActivity", "port: $port")
+        if (DEBUG) Log.d("MainActivity", "port: $port")
         val uploadWorkRequest: WorkRequest =
                 OneTimeWorkRequestBuilder<UploadWorker>()
                         .setInputData(workDataOf("PORT" to port))
@@ -32,39 +34,40 @@ class MainActivity : AppCompatActivity() {
         //val url = "http://192.168.0.19:8080/www/index.html?invoker=rakudana_app&port=" + port.toString()
         val url = "https://rakudana.com:8080/www/index.html?invoker=rakudana_app&port=" + port.toString()
         val uri = Uri.parse(url)
-        Log.d("MainActivity", "invoke url: $url")
+        if (DEBUG) Log.d("MainActivity", "invoke url: $url")
         startActivity(Intent(Intent.ACTION_VIEW, uri))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("MainActivity", "onCreate")
-        Log.d("MainActivity", "savedInstanceState: $savedInstanceState")
+        if (DEBUG) Log.d("MainActivity", "onCreate")
+        if (DEBUG) Log.d("MainActivity", "savedInstanceState: $savedInstanceState")
         super.onCreate(savedInstanceState)
+        // condition of trigger by user. Otherwise AppLink invokation for ClientActions features will trigger main and hide ClientAction thread.
         if (savedInstanceState==null) main()
     }
 
     override fun onPause() {
-        Log.d("MainActivity", "onPause")
+        if (DEBUG) Log.d("MainActivity", "onPause")
         super.onPause()
     }
 
     override fun onRestart() {
-        Log.d("MainActivity", "onRestart")
+        if (DEBUG) Log.d("MainActivity", "onRestart")
         super.onRestart()
     }
 
     override fun onResume() {
-        Log.d("MainActivity", "OnResume")
+        if (DEBUG) Log.d("MainActivity", "OnResume")
         super.onResume()
     }
 
     override fun onStop() {
-        Log.d("MainActivity", "OnStop")
+        if (DEBUG) Log.d("MainActivity", "OnStop")
         super.onStop()
     }
 
     override fun onDestroy() {
-        Log.d("MainActivity", "OnDestroy")
+        if (DEBUG) Log.d("MainActivity", "OnDestroy")
         super.onDestroy()
     }
 }
@@ -72,11 +75,13 @@ class MainActivity : AppCompatActivity() {
 class UploadWorker(appContext: Context, workerParams: WorkerParameters):
         Worker(appContext, workerParams) {
 
+    val DEBUG = false
+
     override fun doWork(): Result {
 
         val port = inputData.getInt("PORT", 0 ) ?: return Result.failure()
         val portString = port.toString()
-        Log.d("UploadWorker", "port: $inputData")
+        if (DEBUG) Log.d("UploadWorker", "port: $inputData")
         //val url = "ws://192.168.0.19:$portString/ws/a"
         val url = "wss://rakudana.com:$portString/ws/a"
 
@@ -88,25 +93,25 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
         try {
             while (true) {
                 val wsClient = WebSocketClient(this, URI(url))
-                Log.d("UploadWorker", "connecting to url: $url")
+                if (DEBUG) Log.d("UploadWorker", "connecting to url: $url")
                 if (wsClient.connectBlocking()) {
                     while (!(wsClient.isOpen())) {
-                        Log.d("UploadWorker", "web socket $portString is not open")
+                        if (DEBUG) Log.d("UploadWorker", "web socket $portString is not open")
                         Thread.sleep(100)
                     }
-                    Log.d("UploadWorker", "web socket open")
+                    if (DEBUG) Log.d("UploadWorker", "web socket open")
 
                     val preferences =  applicationContext.getSharedPreferences("rakudana", Context.MODE_PRIVATE)
                     val contacts: String? = preferences.getString("contacts","")
-                    Log.d("ClientActions", "contacts: $contacts")
+                    if (DEBUG) Log.d("ClientActions", "contacts: $contacts")
                     val callrecords: String? = preferences.getString("callrecs","")
-                    Log.d("ClientActions", "call records: $callrecords")
+                    if (DEBUG) Log.d("ClientActions", "call records: $callrecords")
 
                     wsClient.send(contacts + "\n" + callrecords)
-                    Log.d("UploadWorker", "sent to $portString")
+                    if (DEBUG) Log.d("UploadWorker", "sent to $portString")
                     break
                 } else {
-                    Log.d("UploadWorker", "web socket $portString connection failed")
+                    if (DEBUG) Log.d("UploadWorker", "web socket $portString connection failed")
                     wsClient.close()
                     Thread.sleep(1000)
                 }
@@ -117,7 +122,7 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
             // Indicate whether the work finished successfully with the Result
             return Result.success()
         } catch (throwable: Throwable) {
-            Log.d("UploadWorker", "exception")
+            if (DEBUG) Log.d("UploadWorker", "exception")
             return Result.failure()
         }
     }
