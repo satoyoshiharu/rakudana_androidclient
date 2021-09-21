@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.rakudana">
+    package="com.rakudana"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-feature android:name="android.hardware.camera"
-        android:required="true" />
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-sdk tools:overrideLibrary="com.google.zxing.client.android" />
 
     <application
         android:allowBackup="true"
@@ -13,7 +13,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/rakudana_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Rakudana">
+        android:theme="@style/Theme.Rakudana"
+        android:hardwareAccelerated="true">
         <activity android:name=".MainActivity"
             android:launchMode="singleTask">
             <!-- android:clearTaskOnLaunch="true" -->

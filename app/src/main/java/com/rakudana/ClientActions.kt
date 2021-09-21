@@ -4,18 +4,26 @@ import android.app.Activity
 import android.app.SearchManager
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.CATEGORY_LAUNCHER
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Bundle
+import android.os.Parcelable
 import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.google.zxing.integration.android.IntentIntegrator
+import java.util.jar.Attributes
 
 
 class ClientActions : AppCompatActivity() {
 
-    val DEBUG = false
+    val DEBUG = true
 
     private fun maintainContacts(contactName: String, number: String)
     {
@@ -46,6 +54,8 @@ class ClientActions : AppCompatActivity() {
         val appLinkIntent = intent
         val appLinkAction = appLinkIntent.action
         val appLinkData = appLinkIntent.data
+        val context = applicationContext
+
         if (Intent.ACTION_VIEW == appLinkAction && appLinkData != null) {
             if (DEBUG) Log.d("ClientActions", "AppLinkData: $appLinkData")
             val intentID = appLinkData.lastPathSegment
@@ -138,8 +148,52 @@ class ClientActions : AppCompatActivity() {
                     }
                 }
                 "put_page_shortcut" -> {
+                    val intentIntegrator = IntentIntegrator(this) // SDK24+
+                    val zxingActivityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                        val intentResult = IntentIntegrator.parseActivityResult(it.resultCode, it.data)
+                        if (intentResult.contents != null) {
+                            Toast.makeText(this, intentResult.contents, Toast.LENGTH_LONG).show()
+                            val url = intentResult.getContents()
+                            val label = url
 
+                            val launchIntent = Intent(Intent.ACTION_VIEW)
+                            launchIntent.data = Uri.parse(url)
+                            val manager = getSystemService(Context.SHORTCUT_SERVICE) as ShortcutManager //SDK26+
+                            val info = ShortcutInfo.Builder(this, url)
+                                    .setShortLabel(label)
+                                    .setIcon(Icon.createWithResource(this, R.mipmap.rakudana_launcher_round))
+                                    .setIntent(launchIntent)
+                                    .build()
+                            manager.requestPinShortcut(info, null)
+                        }
+                    }
+                    zxingActivityResultLauncher.launch(intentIntegrator.createScanIntent())
                 }
+                "map" -> {
+                    val query = appLinkData.getQueryParameter("q")
+                    val gmmIntentUri = Uri.parse("geo:0,0?q=$query")
+                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                    mapIntent.setPackage("com.google.android.apps.maps")
+                    mapIntent.resolveActivity(packageManager)?.let {
+                        startActivity(mapIntent)
+                    }
+                }
+                /*"news" -> {
+                    val intent = Intent(Intent.ACTION_MAIN)
+                    intent.addCategory(CATEGORY_LAUNCHER)
+                    intent.setPackage("jp.gocro.smartnews.android")
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                    } else {
+                        val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+                            putExtra(SearchManager.QUERY, "スマートニュース")
+                        }
+                        if (intent.resolveActivity(packageManager) != null) {
+                            startActivity(intent)
+                        }
+                    }
+                }*/
+                /*
                 "search" -> {
                     val query = appLinkData.getQueryParameter("query")
                     val intent = Intent(Intent.ACTION_WEB_SEARCH).apply {
@@ -158,6 +212,7 @@ class ClientActions : AppCompatActivity() {
                         startActivity(intent)
                     }
                 }
+                */
             }
             // Invoke CALL system intent
         }
