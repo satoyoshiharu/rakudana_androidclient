@@ -2,7 +2,6 @@ package com.rakudana
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -10,7 +9,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.work.*
 import java.net.URI
 import java.util.concurrent.TimeUnit
-import java.util.prefs.Preferences
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,7 +22,7 @@ class MainActivity : AppCompatActivity() {
                 OneTimeWorkRequestBuilder<UploadWorker>()
                         .setInputData(workDataOf("PORT" to port))
                         .setInitialDelay(1000, TimeUnit.MILLISECONDS)
-                        .setBackoffCriteria( BackoffPolicy.LINEAR, 1000, TimeUnit.MILLISECONDS)
+                        .setBackoffCriteria(BackoffPolicy.LINEAR, 1000, TimeUnit.MILLISECONDS)
                         .addTag("upload")
                         .build()
         val workManager = WorkManager.getInstance(this)
@@ -35,7 +33,10 @@ class MainActivity : AppCompatActivity() {
         val url = "https://rakudana.com:8080/www/index.html?invoker=rakudana_app&port=" + port.toString()
         val uri = Uri.parse(url)
         if (DEBUG) Log.d("MainActivity", "invoke url: $url")
-        startActivity(Intent(Intent.ACTION_VIEW, uri))
+        val browserIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+            flags = Intent.FLAG_ACTIVITY_NO_HISTORY
+        }
+        startActivity(browserIntent)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         // condition of trigger by user. Otherwise AppLink invokation for ClientActions features will trigger main and hide ClientAction thread.
         if (savedInstanceState==null) main()
+        finish()
     }
 
     override fun onPause() {
@@ -59,11 +61,13 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         if (DEBUG) Log.d("MainActivity", "OnResume")
         super.onResume()
+        //main()
     }
 
     override fun onStop() {
         if (DEBUG) Log.d("MainActivity", "OnStop")
         super.onStop()
+        onDestroy()
     }
 
     override fun onDestroy() {
@@ -79,7 +83,7 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
 
     override fun doWork(): Result {
 
-        val port = inputData.getInt("PORT", 0 ) ?: return Result.failure()
+        val port = inputData.getInt("PORT", 0) ?: return Result.failure()
         val portString = port.toString()
         if (DEBUG) Log.d("UploadWorker", "port: $inputData")
         //val url = "ws://192.168.0.19:$portString/ws/a"
@@ -101,10 +105,13 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters):
                     }
                     if (DEBUG) Log.d("UploadWorker", "web socket open")
 
-                    val preferences =  applicationContext.getSharedPreferences("rakudana", Context.MODE_PRIVATE)
-                    val contacts: String? = preferences.getString("contacts","")
+                    val preferences =  applicationContext.getSharedPreferences(
+                        "rakudana",
+                        Context.MODE_PRIVATE
+                    )
+                    val contacts: String? = preferences.getString("contacts", "")
                     if (DEBUG) Log.d("ClientActions", "contacts: $contacts")
-                    val callrecords: String? = preferences.getString("callrecs","")
+                    val callrecords: String? = preferences.getString("callrecs", "")
                     if (DEBUG) Log.d("ClientActions", "call records: $callrecords")
 
                     wsClient.send(contacts + "\n" + callrecords)

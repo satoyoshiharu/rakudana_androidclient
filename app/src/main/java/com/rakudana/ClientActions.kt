@@ -23,7 +23,7 @@ import java.util.jar.Attributes
 
 class ClientActions : AppCompatActivity() {
 
-    val DEBUG = true
+    val DEBUG = false//true
 
     private fun maintainContacts(contactName: String, number: String)
     {
@@ -142,9 +142,12 @@ class ClientActions : AppCompatActivity() {
                     resultLauncher.launch(intent)
                 }
                 "save_memo" -> {
-                    val intent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+                    val intent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
                     if (intent.resolveActivity(packageManager) != null) {
                         startActivity(intent)
+                        finish()
                     }
                 }
                 "put_page_shortcut" -> {

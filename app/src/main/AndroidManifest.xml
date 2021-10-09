@@ -16,14 +16,15 @@
         android:theme="@style/Theme.Rakudana"
         android:hardwareAccelerated="true">
         <activity android:name=".MainActivity"
-            android:launchMode="singleTask">
+            android:noHistory="true">
             <!-- android:clearTaskOnLaunch="true" -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ClientActions">
+        <activity android:name=".ClientActions"
+            android:noHistory="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
